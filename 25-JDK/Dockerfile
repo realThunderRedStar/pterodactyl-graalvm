@@ -3,28 +3,29 @@
 # Environment: Java 25
 # Minimum Panel Version: 1.7.0
 # ----------------------------------
-FROM alpine:3.20
+FROM debian:12-slim
 ARG TARGETPLATFORM
 ARG GRAAL_VERSION=25.0.0
 ARG JAVA_VERSION=25
-MAINTAINER ThunderRedStar, <no@idk.invalid>
+MAINTAINER RikoDEV, <kontakt@riko.dev>
 
-# Default to UTF-8 file.encoding
+ENV DEBIAN_FRONTEND=noninteractive
 ENV LANG='en_US.UTF-8' LANGUAGE='en_US:en' LC_ALL='en_US.UTF-8'
 
-RUN apk add --no-cache \
+RUN apt-get update -y \
+  && apt-get install -y --no-install-recommends \
     curl \
     ca-certificates \
     openssl \
     git \
     tar \
-    sqlite \
+    sqlite3 \
     fontconfig \
-    ttf-dejavu \
     tzdata \
-    bash \
-    gcompat \
-    libstdc++ \
+    locales \
+    iproute2 \
+  && echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen \
+  && locale-gen en_US.UTF-8 \
   && case ${TARGETPLATFORM} in \
          "linux/amd64")  ARCH=x64  ;; \
          "linux/arm64")  ARCH=aarch64  ;; \
@@ -34,12 +35,13 @@ RUN apk add --no-cache \
   && cd /opt/java/graalvm \
   && tar -xf /tmp/graalvm.tar.gz --strip-components=1 \
   && export PATH="/opt/java/graalvm/bin:$PATH" \
+  && rm -rf /var/lib/apt/lists/* \
   && rm -rf /tmp/graalvm.tar.gz
 
 ENV JAVA_HOME=/opt/java/graalvm \
     PATH="/opt/java/graalvm/bin:$PATH"
 
-RUN adduser -D -h /home/container container
+RUN useradd -d /home/container -m container
 
 USER        container
 ENV         USER=container HOME=/home/container
